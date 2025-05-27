@@ -6,8 +6,6 @@
 #include "AssetActionUtility.h"
 #include "QuickAssetAction.generated.h"
 
-
-
 UCLASS()
 class SUPERMANAGER_API UQuickAssetAction : public UAssetActionUtility
 {
@@ -15,5 +13,5 @@ class SUPERMANAGER_API UQuickAssetAction : public UAssetActionUtility
 	
 public:
 	UFUNCTION(CallInEditor)
-	void TestFunc();
+	void DuplicateAssets(int32 DuplicatesNum);
 };
