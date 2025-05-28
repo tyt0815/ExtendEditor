@@ -13,6 +13,8 @@
 void FSuperManagerModule::StartupModule()
 {
 	InitCBMenuExtention();
+
+	RegisterAdvancedDeletionTab();
 }
 
 void FSuperManagerModule::ShutdownModule()
@@ -99,6 +101,12 @@ void FSuperManagerModule::AddCBMenuEntry(FMenuBuilder& MenuBuilder)
 		FSlateIcon(),	// Custom icon
 		FExecuteAction::CreateRaw(this, &FSuperManagerModule::OnDeleteEmptyFolderButtonClicked)	//The actual function to execute
 	);
+	MenuBuilder.AddMenuEntry(
+		FText::FromString(TEXT("Advance delete")),
+		FText::FromString(TEXT("List assets by specific condition in a tab for deleting")),	// MenuEntryø° ¥Î«— tooltip
+		FSlateIcon(),	// Custom icon
+		FExecuteAction::CreateRaw(this, &FSuperManagerModule::OnAdvancedDeleteButtonClicked)	//The actual function to execute
+	);
 }
 
 void FSuperManagerModule::OnDeleteUnusedAssetButtonClicked()
@@ -168,7 +176,6 @@ void FSuperManagerModule::OnDeleteEmptyFolderButtonClicked()
 	TArray<FString> EmptyFoldersPathArray;
 	for (const FString& FolderPathSelected : FolderPathsSelected)
 	{
-		DebugHeader::Print(FolderPathSelected, FColor::Cyan);
 		if (IsRootFolderPath(FolderPathSelected))
 		{
 			continue;
@@ -177,7 +184,6 @@ void FSuperManagerModule::OnDeleteEmptyFolderButtonClicked()
 		TArray<FString> FolderPathsArray = UEditorAssetLibrary::ListAssets(FolderPathSelected, true, true);
 		for (const FString FolderPath : FolderPathsArray)
 		{
-			DebugHeader::Print(FolderPath, FColor::Magenta);
 			if (IsRootFolderPath(FolderPath) || !UEditorAssetLibrary::DoesDirectoryExist(FolderPath))
 			{
 				continue;
@@ -195,8 +201,6 @@ void FSuperManagerModule::OnDeleteEmptyFolderButtonClicked()
 			}
 		}
 	}
-
-	DebugHeader::Print(EmptyFolderPathsNames, FColor::Yellow);
 
 	if (EmptyFoldersPathArray.Num() == 0)
 	{
@@ -238,6 +242,11 @@ void FSuperManagerModule::OnDeleteEmptyFolderButtonClicked()
 	);
 }
 
+void FSuperManagerModule::OnAdvancedDeleteButtonClicked()
+{
+	FGlobalTabmanager::Get()->TryInvokeTab(FName("AdvanceDeletion"));
+}
+
 bool FSuperManagerModule::IsRootFolderPath(const FString& FolderPath)
 {
 	return 
@@ -245,6 +254,22 @@ bool FSuperManagerModule::IsRootFolderPath(const FString& FolderPath)
 		FolderPath.Contains(TEXT("Collections")) ||
 		FolderPath.Contains(TEXT("__ExternalActors__")) ||
 		FolderPath.Contains(TEXT("__ExternalObjects__"));
+}
+
+#pragma endregion
+#pragma region CustomEditorTab
+
+void FSuperManagerModule::RegisterAdvancedDeletionTab()
+{
+	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(
+		FName("AdvanceDeletion"),
+		FOnSpawnTab::CreateRaw(this, &FSuperManagerModule::OnSpawnAdvanceDeletionTab)
+	).SetDisplayName(FText::FromString(TEXT("Advance Deletion")));
+}
+
+TSharedRef<SDockTab> FSuperManagerModule::OnSpawnAdvanceDeletionTab(const FSpawnTabArgs& SpawnTabArgs)
+{
+	return SNew(SDockTab).TabRole(ETabRole::NomadTab);
 }
 
 #pragma endregion

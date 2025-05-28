@@ -23,6 +23,12 @@ private:
 	void AddCBMenuEntry(FMenuBuilder& MenuBuilder);
 	void OnDeleteUnusedAssetButtonClicked();
 	void OnDeleteEmptyFolderButtonClicked();
+	void OnAdvancedDeleteButtonClicked();
 	bool IsRootFolderPath(const FString& FolderPath);
+#pragma endregion
+
+#pragma region CustomEditorTab
+	void RegisterAdvancedDeletionTab();
+	TSharedRef<SDockTab>  OnSpawnAdvanceDeletionTab(const FSpawnTabArgs& SpawnTabArgs);
 #pragma endregion
 };
