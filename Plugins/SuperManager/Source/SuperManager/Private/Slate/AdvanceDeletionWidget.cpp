@@ -2,6 +2,7 @@
 
 
 #include "Slate/AdvanceDeletionWidget.h"
+#include "DebugHeader.h"
 
 void SAdvanceDeletionWidget::Construct(const FArguments& InArgs)
 {
@@ -34,7 +35,7 @@ void SAdvanceDeletionWidget::Construct(const FArguments& InArgs)
 
 			// for the asset list
 			+SVerticalBox::Slot()
-			.AutoHeight()
+			.VAlign(VAlign_Fill)
 			[
 				SNew(SScrollBox)
 					+SScrollBox::Slot()
@@ -60,13 +61,54 @@ TSharedRef<ITableRow> SAdvanceDeletionWidget::OnGenerateRowForList(
 	const TSharedRef<STableViewBase>& OwnerTable
 )
 {
+	if (!AssetDataToDisplay.IsValid())
+	{
+		return SNew(STableRow<TSharedPtr<FAssetData>>, OwnerTable);
+	}
 	const FString DisplayAssetName = AssetDataToDisplay->AssetName.ToString();
 
 	TSharedRef<STableRow<TSharedPtr<FAssetData>>> TableRow = SNew(STableRow<TSharedPtr<FAssetData>>, OwnerTable)
 		[
-			SNew(STextBlock)
-				.Text(FText::FromString(DisplayAssetName))
+			SNew(SHorizontalBox)
+				+SHorizontalBox::Slot()
+				.HAlign(HAlign_Left)
+				.VAlign(VAlign_Center)
+				.FillWidth(0.05f)
+				[
+					ConstructCheckBox(AssetDataToDisplay)
+				]
+
+				+SHorizontalBox::Slot()
+				[
+					SNew(STextBlock)
+						.Text(FText::FromString(DisplayAssetName))
+				]
 		];
 
 	return TableRow;
+}
+
+TSharedRef<SCheckBox> SAdvanceDeletionWidget::ConstructCheckBox(const TSharedPtr<FAssetData> AssetDataToDisplay)
+{
+	return SNew(SCheckBox)
+		.Type(ESlateCheckBoxType::CheckBox)
+		.OnCheckStateChanged(this, &SAdvanceDeletionWidget::OnCheckBoxStateChange, AssetDataToDisplay)
+		.Visibility(EVisibility::Visible);
+}
+
+void SAdvanceDeletionWidget::OnCheckBoxStateChange(ECheckBoxState NewState, TSharedPtr<FAssetData> AssetData)
+{
+	switch (NewState)
+	{
+	case ECheckBoxState::Unchecked:
+		DebugHeader::Print(AssetData->AssetName.ToString() + TEXT(" is unchecked"), FColor::Green);
+		break;
+	case ECheckBoxState::Checked:
+		DebugHeader::Print(AssetData->AssetName.ToString() + TEXT(" is checked"), FColor::Green);
+		break;
+	case ECheckBoxState::Undetermined:
+		break;
+	default:
+		break;
+	}
 }
