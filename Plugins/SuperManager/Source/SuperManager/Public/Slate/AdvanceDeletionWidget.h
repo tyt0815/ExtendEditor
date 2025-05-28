@@ -6,12 +6,16 @@
 class SAdvanceDeletionWidget : public SCompoundWidget
 {
 	SLATE_BEGIN_ARGS(SAdvanceDeletionWidget) {}
-		SLATE_ARGUMENT(TArray<TSharedPtr<FAssetData>>, AssetsDataArray)
+		SLATE_ARGUMENT(TArray<TSharedPtr<FAssetData>>, AssetsDataToStore)
 	SLATE_END_ARGS()
 
 public:
 	void Construct(const FArguments& InArgs);
 
 private:
-	TArray<TSharedPtr<FAssetData>> AssetsDataUnderSelectedFolderArray;
+	TArray<TSharedPtr<FAssetData>> StoredAssetsData;
+	TSharedRef<ITableRow> OnGenerateRowForList(
+		TSharedPtr<FAssetData> AssetDataToDisplay,
+		const TSharedRef<STableViewBase>& OwnerTable
+	);
 };

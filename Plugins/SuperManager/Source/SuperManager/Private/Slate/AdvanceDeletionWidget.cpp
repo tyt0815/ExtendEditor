@@ -7,7 +7,7 @@ void SAdvanceDeletionWidget::Construct(const FArguments& InArgs)
 {
 	bCanSupportFocus = true;
 
-	AssetsDataUnderSelectedFolderArray = InArgs._AssetsDataArray;
+	StoredAssetsData = InArgs._AssetsDataToStore;
 	FSlateFontInfo TitleTextFont = FCoreStyle::Get().GetFontStyle(FName("EmbossedText"));
 	TitleTextFont.Size = 30;
 
@@ -37,6 +37,13 @@ void SAdvanceDeletionWidget::Construct(const FArguments& InArgs)
 			.AutoHeight()
 			[
 				SNew(SScrollBox)
+					+SScrollBox::Slot()
+					[
+						SNew(SListView<TSharedPtr<FAssetData>>)
+							.ItemHeight(24.f)
+							.ListItemsSource(&StoredAssetsData)
+							.OnGenerateRow(this, &SAdvanceDeletionWidget::OnGenerateRowForList)
+					]
 			]
 
 			//for 3 buttons
@@ -46,4 +53,20 @@ void SAdvanceDeletionWidget::Construct(const FArguments& InArgs)
 				SNew(SHorizontalBox)
 			]
 	];
+}
+
+TSharedRef<ITableRow> SAdvanceDeletionWidget::OnGenerateRowForList(
+	TSharedPtr<FAssetData> AssetDataToDisplay,
+	const TSharedRef<STableViewBase>& OwnerTable
+)
+{
+	const FString DisplayAssetName = AssetDataToDisplay->AssetName.ToString();
+
+	TSharedRef<STableRow<TSharedPtr<FAssetData>>> TableRow = SNew(STableRow<TSharedPtr<FAssetData>>, OwnerTable)
+		[
+			SNew(STextBlock)
+				.Text(FText::FromString(DisplayAssetName))
+		];
+
+	return TableRow;
 }
