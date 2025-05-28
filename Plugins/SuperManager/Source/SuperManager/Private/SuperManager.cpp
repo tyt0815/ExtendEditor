@@ -4,6 +4,8 @@
 #include "ContentBrowserModule.h"
 #include "EditorAssetLibrary.h"
 #include "ObjectTools.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "AssetToolsModule.h"
 #include "DebugHeader.h"
 
 #define LOCTEXT_NAMESPACE "FSuperManagerModule"
@@ -17,6 +19,36 @@ void FSuperManagerModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
+}
+void FSuperManagerModule::FixUpRedirectors()
+{
+	TArray<UObjectRedirector*> RedirectorsToFixArray;
+
+	FAssetRegistryModule& AssetRegistryModule =
+		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	FARFilter Filter;
+	Filter.bRecursivePaths = true;
+	Filter.PackagePaths.Emplace("/Game");
+	Filter.ClassNames.Emplace("ObjectRedirector");
+
+	TArray<FAssetData> OutRedirectors;
+	AssetRegistryModule.Get().GetAssets(Filter, OutRedirectors);
+
+	for (const FAssetData& RedirectorData : OutRedirectors)
+	{
+		UObjectRedirector* RedirectorToFix = Cast<UObjectRedirector>(RedirectorData.GetAsset());
+		if (RedirectorToFix)
+		{
+			RedirectorsToFixArray.Add(RedirectorToFix);
+		}
+
+	}
+
+	FAssetToolsModule& AssettoolsModule =
+		FModuleManager::LoadModuleChecked<FAssetToolsModule>(TEXT("AssetTools"));
+
+	AssettoolsModule.Get().FixupReferencers(RedirectorsToFixArray);
+	
 }
 #pragma region ContentBrowserMenuExtention
 void FSuperManagerModule::InitCBMenuExtention()
@@ -69,6 +101,8 @@ void FSuperManagerModule::OnDeleteUnusedAssetButtonClicked()
 		DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("You can only do this to one folder"));
 		return;
 	}
+
+	FixUpRedirectors();
 	
 	TArray<FString> AssetsPathNames = UEditorAssetLibrary::ListAssets(FolderPathsSelected[0]);
 	if (AssetsPathNames.Num() == 0)

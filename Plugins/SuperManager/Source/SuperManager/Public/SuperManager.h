@@ -13,6 +13,7 @@ public:
 	virtual void ShutdownModule() override;
 
 private:
+	void FixUpRedirectors();
 
 	TArray<FString> FolderPathsSelected;
 
