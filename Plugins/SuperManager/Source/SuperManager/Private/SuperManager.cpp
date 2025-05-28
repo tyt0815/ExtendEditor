@@ -29,7 +29,7 @@ void FSuperManagerModule::FixUpRedirectors()
 	FARFilter Filter;
 	Filter.bRecursivePaths = true;
 	Filter.PackagePaths.Emplace("/Game");
-	Filter.ClassNames.Emplace("ObjectRedirector");
+	Filter.ClassPaths.Emplace(UObjectRedirector::StaticClass());
 
 	TArray<FAssetData> OutRedirectors;
 	AssetRegistryModule.Get().GetAssets(Filter, OutRedirectors);
@@ -73,10 +73,10 @@ TSharedRef<FExtender> FSuperManagerModule::CustomCBMenuExtender(const TArray<FSt
 	if (SelectedPaths.Num() > 0)
 	{
 		MenuExtender->AddMenuExtension(
-			FName("Delete"),			
+			FName("Delete"),			// Extension hook, position to insert
 			EExtensionHook::After,		// Delete 라는 Extention Hook을 가진 extenion 밑에 추가
-			TSharedPtr<FUICommandList>(),
-			FMenuExtensionDelegate::CreateRaw(this, &FSuperManagerModule::AddCBMenuEntry)
+			TSharedPtr<FUICommandList>(),	// custom hot key
+			FMenuExtensionDelegate::CreateRaw(this, &FSuperManagerModule::AddCBMenuEntry)	// Second binding, will define details for this menu entry
 		);
 
 		FolderPathsSelected = SelectedPaths;
@@ -84,13 +84,20 @@ TSharedRef<FExtender> FSuperManagerModule::CustomCBMenuExtender(const TArray<FSt
 	return MenuExtender;
 }
 
+// Define details for the custom menu entry
 void FSuperManagerModule::AddCBMenuEntry(FMenuBuilder& MenuBuilder)
 {
 	MenuBuilder.AddMenuEntry(
-		FText::FromString(TEXT("Delete unused assets")),		// MenuEntry 이름?
-		FText::FromString(TEXT("Safely delete all unused assets under folder")),	// MenuEntry에 대한 설명
-		FSlateIcon(),
-		FExecuteAction::CreateRaw(this, &FSuperManagerModule::OnDeleteUnusedAssetButtonClicked)
+		FText::FromString(TEXT("Delete unused assets")),		// MenuEntry Title
+		FText::FromString(TEXT("Safely delete all unused assets under folder")),	// MenuEntry에 대한 tooltip
+		FSlateIcon(),	// Custom icon
+		FExecuteAction::CreateRaw(this, &FSuperManagerModule::OnDeleteUnusedAssetButtonClicked)	//The actual function to execute
+	);
+	MenuBuilder.AddMenuEntry(
+		FText::FromString(TEXT("Delete empty folder")),
+		FText::FromString(TEXT("Safely delete all empty folders")),	// MenuEntry에 대한 tooltip
+		FSlateIcon(),	// Custom icon
+		FExecuteAction::CreateRaw(this, &FSuperManagerModule::OnDeleteEmptyFolderButtonClicked)	//The actual function to execute
 	);
 }
 
@@ -107,7 +114,7 @@ void FSuperManagerModule::OnDeleteUnusedAssetButtonClicked()
 	TArray<FString> AssetsPathNames = UEditorAssetLibrary::ListAssets(FolderPathsSelected[0]);
 	if (AssetsPathNames.Num() == 0)
 	{
-		DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("No assets found under selected folder"));
+		DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("No assets found under selected folder"), false);
 		return;
 	}
 
@@ -116,7 +123,7 @@ void FSuperManagerModule::OnDeleteUnusedAssetButtonClicked()
 	for (const FString& AssetPathName : AssetsPathNames)
 	{
 		// root folder는 건디리지 않는다
-		if (AssetPathName.Contains(TEXT("Developers")) || AssetPathName.Contains(TEXT("Collections")))
+		if (IsRootFolderPath(AssetPathName))
 		{
 			continue;
 		}
@@ -137,7 +144,7 @@ void FSuperManagerModule::OnDeleteUnusedAssetButtonClicked()
 		EAppReturnType::Type ConfirmResult = DebugHeader::ShowMsgDialog(
 			EAppMsgType::YesNo,
 			TEXT("A total of ") + FString::FromInt(UnusedAssetsData.Num()) + TEXT(" found.\
-			\nWould you like to proceed")
+			\nWould you like to proceed"), false
 		);
 
 		if (ConfirmResult == EAppReturnType::No)
@@ -151,6 +158,93 @@ void FSuperManagerModule::OnDeleteUnusedAssetButtonClicked()
 	{
 		DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("No unused assets found under selected folder"));
 	}
+}
+
+void FSuperManagerModule::OnDeleteEmptyFolderButtonClicked()
+{
+	FixUpRedirectors();
+	
+	FString EmptyFolderPathsNames;
+	TArray<FString> EmptyFoldersPathArray;
+	for (const FString& FolderPathSelected : FolderPathsSelected)
+	{
+		DebugHeader::Print(FolderPathSelected, FColor::Cyan);
+		if (IsRootFolderPath(FolderPathSelected))
+		{
+			continue;
+		}
+
+		TArray<FString> FolderPathsArray = UEditorAssetLibrary::ListAssets(FolderPathSelected, true, true);
+		for (const FString FolderPath : FolderPathsArray)
+		{
+			DebugHeader::Print(FolderPath, FColor::Magenta);
+			if (IsRootFolderPath(FolderPath) || !UEditorAssetLibrary::DoesDirectoryExist(FolderPath))
+			{
+				continue;
+			}
+
+			TArray<FString> AssetsInFolder = UEditorAssetLibrary::ListAssets(FolderPath, true);
+			// TODO: 이유는 모르겠지만 DoesDirectoryHaveAssets 함수가 무조건 false 반환함.
+			// if(!UEditorAssetLibrary::DoesDirectoryHaveAssets(FolderPath, true))
+			if (AssetsInFolder.Num() < 1)
+			{
+				EmptyFolderPathsNames.Append(FolderPath);
+				EmptyFolderPathsNames.Append("\n");
+
+				EmptyFoldersPathArray.Add(FolderPath);
+			}
+		}
+	}
+
+	DebugHeader::Print(EmptyFolderPathsNames, FColor::Yellow);
+
+	if (EmptyFoldersPathArray.Num() == 0)
+	{
+		DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("No empty folder"), false);
+		return;
+	}
+
+	EAppReturnType::Type ConfirmResult = DebugHeader::ShowMsgDialog(
+		EAppMsgType::YesNo,
+		TEXT("Empty folders found in:\n") +
+		EmptyFolderPathsNames +
+		TEXT("Would you like to delete all?"),
+		false
+	);
+
+	int32 Counter = 0;
+	if (ConfirmResult == EAppReturnType::Type::No)
+	{
+		return;
+	}
+
+	for (const FString& EmptyFolderPath : EmptyFoldersPathArray)
+	{
+		if (UEditorAssetLibrary::DeleteDirectory(EmptyFolderPath))
+		{
+			++Counter;
+		}
+		else
+		{
+			DebugHeader::Print(TEXT("Failed to delete: ") + EmptyFolderPath, FColor::Red);
+		}
+	}
+	
+	DebugHeader::ShowMsgDialog(
+		EAppMsgType::Ok,
+		TEXT("Delete: ") + FString::FromInt(Counter) +
+		TEXT("\nFailed: " + FString::FromInt(EmptyFoldersPathArray.Num() - Counter)),
+		false
+	);
+}
+
+bool FSuperManagerModule::IsRootFolderPath(const FString& FolderPath)
+{
+	return 
+		FolderPath.Contains(TEXT("Developers")) ||
+		FolderPath.Contains(TEXT("Collections")) ||
+		FolderPath.Contains(TEXT("__ExternalActors__")) ||
+		FolderPath.Contains(TEXT("__ExternalObjects__"));
 }
 
 #pragma endregion

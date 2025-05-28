@@ -22,5 +22,7 @@ private:
 	TSharedRef<FExtender> CustomCBMenuExtender(const TArray<FString>& SelectedPaths);
 	void AddCBMenuEntry(FMenuBuilder& MenuBuilder);
 	void OnDeleteUnusedAssetButtonClicked();
+	void OnDeleteEmptyFolderButtonClicked();
+	bool IsRootFolderPath(const FString& FolderPath);
 #pragma endregion
 };
