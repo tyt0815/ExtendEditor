@@ -6,15 +6,20 @@
 #include "DebugHeader.h"
 
 #define LIST_ALL TEXT("List All Assets")
+#define LIST_UNUSED TEXT("List Unused Assets")
+#define LIST_SAME_NAME TEXT("List Same Name Assets")
 
 void SAdvanceDeletionWidget::Construct(const FArguments& InArgs)
 {
 	bCanSupportFocus = true;
 	StoredAssetsData = InArgs._AssetsDataToStore;
+	DisplayedAssetsData = StoredAssetsData;
 	FSlateFontInfo TitleTextFont = GetEmbossedTextFont();
 	TitleTextFont.Size = 30;
 
 	ComboBoxSourceItems.Add(MakeShared<FString>(LIST_ALL));
+	ComboBoxSourceItems.Add(MakeShared<FString>(LIST_UNUSED));
+	ComboBoxSourceItems.Add(MakeShared<FString>(LIST_SAME_NAME));
 
 	ChildSlot
 	[
@@ -145,7 +150,7 @@ TSharedRef<ITableRow> SAdvanceDeletionWidget::OnGenerateRowForList(
 TSharedRef<SListView<TSharedPtr<FAssetData>>> SAdvanceDeletionWidget::ConstructAssetListView()
 {
 	ConstructedAssetListView = SNew(SListView<TSharedPtr<FAssetData>>)
-		.ListItemsSource(&StoredAssetsData)
+		.ListItemsSource(&DisplayedAssetsData)
 		.OnGenerateRow(this, &SAdvanceDeletionWidget::OnGenerateRowForList);
 
 	return ConstructedAssetListView.ToSharedRef();
@@ -261,6 +266,7 @@ void SAdvanceDeletionWidget::OnCheckBoxStateChange(ECheckBoxState NewState, TSha
 FReply SAdvanceDeletionWidget::OnDeleteButtonClicked(const TSharedPtr<FAssetData>& AssetDataToDisply)
 {
 	FSuperManagerModule& SuperManager = FModuleManager::LoadModuleChecked<FSuperManagerModule>(TEXT("SuperManager"));
+	SuperManager.FixUpRedirectors();
 	if (SuperManager.DeleteSingleAssetForAssetList(*AssetDataToDisply))
 	{
 		if (StoredAssetsData.Contains(AssetDataToDisply))
@@ -281,18 +287,21 @@ FReply SAdvanceDeletionWidget::OnDeleteAllButtonClicked()
 	}
 	else
 	{
+		FSuperManagerModule& SuperManager = FModuleManager::LoadModuleChecked<FSuperManagerModule>(TEXT("SuperManager"));
+		SuperManager.FixUpRedirectors();
+
 		TArray<FAssetData> AssetDataToDelete;
 		for (TSharedPtr<FAssetData> AssetRef : AssetsDataToDeleteArray)
 		{
 			AssetDataToDelete.Add(*AssetRef);
 		}
 
-		FSuperManagerModule& SuperManager = FModuleManager::LoadModuleChecked<FSuperManagerModule>("SuperManager");
 		if (SuperManager.DeleteMultipleAssetsForAssetList(AssetDataToDelete))
 		{
 			for (const TSharedPtr<FAssetData>& DeletedAsset : AssetsDataToDeleteArray)
 			{
 				StoredAssetsData.Remove(DeletedAsset);
+				DisplayedAssetsData.Remove(DeletedAsset);
 			}
 			RefreshAssetListView();
 		}
@@ -332,8 +341,23 @@ TSharedRef<SWidget> SAdvanceDeletionWidget::OnGenerateComboContent(TSharedPtr<FS
 
 void SAdvanceDeletionWidget::OnComboSelectionChanged(TSharedPtr<FString> SelectedOption, ESelectInfo::Type InSelectInfo)
 {
-	DebugHeader::Print(*SelectedOption.Get(), FColor::Cyan);
 	ComboDisplayTextBlock->SetText(FText::FromString(*SelectedOption.Get()));
+
+	FSuperManagerModule& SuperManager = FModuleManager::LoadModuleChecked<FSuperManagerModule>(TEXT("SuperManager"));
+	if (*SelectedOption == LIST_ALL)
+	{
+		DisplayedAssetsData = StoredAssetsData;
+	}
+	else if (*SelectedOption == LIST_UNUSED)
+	{
+		SuperManager.ListUnusedAssetsForAssetList(StoredAssetsData, DisplayedAssetsData);
+	}
+	else if (*SelectedOption == LIST_SAME_NAME)
+	{
+		SuperManager.ListSameNameAssetsForAssetList(StoredAssetsData, DisplayedAssetsData);
+	}
+
+	RefreshAssetListView();
 }
 
 void SAdvanceDeletionWidget::RefreshAssetListView()

@@ -11,9 +11,9 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
+	void FixUpRedirectors();
 
 private:
-	void FixUpRedirectors();
 
 	TArray<FString> FolderPathsSelected;
 
@@ -37,5 +37,13 @@ private:
 public:
 	bool DeleteSingleAssetForAssetList(const FAssetData& AssetDataToDelete);
 	bool DeleteMultipleAssetsForAssetList(const TArray<FAssetData>& AssetsToDelete);
+	void ListUnusedAssetsForAssetList(
+		const TArray<TSharedPtr<FAssetData>>& AssetsDataToFilter,
+		TArray<TSharedPtr<FAssetData>>& OutUnusedAssetsData
+	);
+	void ListSameNameAssetsForAssetList(
+		const TArray<TSharedPtr<FAssetData>>& AssetsDataToFilter,
+		TArray<TSharedPtr<FAssetData>>& OutSameNameAssetsData
+	);
 #pragma endregion
 };

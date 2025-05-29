@@ -313,6 +313,46 @@ bool FSuperManagerModule::DeleteMultipleAssetsForAssetList(const TArray<FAssetDa
 	return ObjectTools::DeleteAssets(AssetsToDelete) > 0 ? true : false;
 }
 
+void FSuperManagerModule::ListUnusedAssetsForAssetList(
+	const TArray<TSharedPtr<FAssetData>>& AssetsDataToFilter,
+	TArray<TSharedPtr<FAssetData>>& OutUnusedAssetsData
+)
+{
+	OutUnusedAssetsData.Empty();
+
+	for (const TSharedPtr<FAssetData>& AssetData : AssetsDataToFilter)
+	{
+		TArray<FString> Referencers = UEditorAssetLibrary::FindPackageReferencersForAsset(AssetData->GetObjectPathString());
+		if (Referencers.Num() == 0)
+		{
+			OutUnusedAssetsData.Add(AssetData);
+		}
+	}
+}
+
+void FSuperManagerModule::ListSameNameAssetsForAssetList(const TArray<TSharedPtr<FAssetData>>& AssetsDataToFilter, TArray<TSharedPtr<FAssetData>>& OutSameNameAssetsData)
+{
+	OutSameNameAssetsData.Empty();
+	TMultiMap<FString, TSharedPtr<FAssetData>> AssetsDataMap;
+
+	for (const TSharedPtr<FAssetData>& AssetData : AssetsDataToFilter)
+	{
+		AssetsDataMap.Add(AssetData->AssetName.ToString(), AssetData);
+	}
+
+	TArray<FString> Keys;
+	AssetsDataMap.GetKeys(Keys);
+	for (const FString& Key : Keys)
+	{
+		TArray<TSharedPtr<FAssetData>> AssetsDataArray;
+		AssetsDataMap.MultiFind(Key, AssetsDataArray);
+		if (AssetsDataArray.Num() > 1)
+		{
+			OutSameNameAssetsData.Append(AssetsDataArray);
+		}
+	}
+}
+
 #pragma endregion
 
 #undef LOCTEXT_NAMESPACE
