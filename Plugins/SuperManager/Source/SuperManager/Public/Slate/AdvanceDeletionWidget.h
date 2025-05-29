@@ -13,11 +13,35 @@ public:
 	void Construct(const FArguments& InArgs);
 
 private:
-	TArray<TSharedPtr<FAssetData>> StoredAssetsData;
 	TSharedRef<ITableRow> OnGenerateRowForList(
 		TSharedPtr<FAssetData> AssetDataToDisplay,
 		const TSharedRef<STableViewBase>& OwnerTable
 	);
+	TSharedRef<SListView<TSharedPtr<FAssetData>>> ConstructAssetListView();
 	TSharedRef<SCheckBox> ConstructCheckBox(const TSharedPtr<FAssetData> AssetDataToDisplay);
+	TSharedRef<STextBlock> ConstructTextForRowWidget(const FString& TextContent, const FSlateFontInfo& FontToUse);
+	TSharedRef<SButton> ConstructButtonForRowWidget(const TSharedPtr<FAssetData>& AssetDataToDisply);
+	TSharedRef<SButton> ConstructTabButton();
+	TSharedRef<STextBlock> ConstructTextForTabButtons(const FString& TextContent);
+	TSharedRef<SButton> ConstructDeleteAllButton();
+	TSharedRef<SButton> ConstructSelectAllButton();
+	TSharedRef<SButton> ConstructDeselectAllButton();
 	void OnCheckBoxStateChange(ECheckBoxState NewState, TSharedPtr<FAssetData> AssetData);
+	FReply OnDeleteButtonClicked(const TSharedPtr<FAssetData>& AssetDataToDisply);
+	FReply OnDeleteAllButtonClicked();
+	FReply OnSelectAllButtonClicked();
+	FReply OnDeselectAllButtonClicked();
+	void RefreshAssetListView();
+
+	TArray<TSharedPtr<FAssetData>> StoredAssetsData;
+	TArray<TSharedPtr<FAssetData>> AssetsDataToDeleteArray;
+	TArray<TSharedRef<SCheckBox>> CheckBoxesArray;
+	TSharedPtr<SListView<TSharedPtr<FAssetData>>> ConstructedAssetListView;
+
+
+
+	FORCEINLINE FSlateFontInfo GetEmbossedTextFont() const
+	{
+		return FCoreStyle::Get().GetFontStyle(FName("EmbossedText"));
+	}
 };
