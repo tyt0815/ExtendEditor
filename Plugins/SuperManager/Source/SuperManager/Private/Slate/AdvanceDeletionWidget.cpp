@@ -5,12 +5,16 @@
 #include "SuperManager.h"
 #include "DebugHeader.h"
 
+#define LIST_ALL TEXT("List All Assets")
+
 void SAdvanceDeletionWidget::Construct(const FArguments& InArgs)
 {
 	bCanSupportFocus = true;
 	StoredAssetsData = InArgs._AssetsDataToStore;
 	FSlateFontInfo TitleTextFont = GetEmbossedTextFont();
 	TitleTextFont.Size = 30;
+
+	ComboBoxSourceItems.Add(MakeShared<FString>(LIST_ALL));
 
 	ChildSlot
 	[
@@ -31,6 +35,17 @@ void SAdvanceDeletionWidget::Construct(const FArguments& InArgs)
 			.AutoHeight()
 			[
 				SNew(SHorizontalBox)
+			]
+
+			+SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SNew(SHorizontalBox)
+					+SHorizontalBox::Slot()
+					.AutoWidth()
+					[
+						ConstructComboBox()
+					]
 			]
 
 			// for the asset list
@@ -209,6 +224,20 @@ TSharedRef<SButton> SAdvanceDeletionWidget::ConstructDeselectAllButton()
 	return DeselectAllButton;
 }
 
+TSharedRef<SComboBox<TSharedPtr<FString>>> SAdvanceDeletionWidget::ConstructComboBox()
+{
+	TSharedRef<SComboBox<TSharedPtr<FString>>> ConstructedComboBox =
+		SNew(SComboBox<TSharedPtr<FString>>)
+		.OptionsSource(&ComboBoxSourceItems)
+		.OnGenerateWidget(this, &SAdvanceDeletionWidget::OnGenerateComboContent)
+		.OnSelectionChanged(this, &SAdvanceDeletionWidget::OnComboSelectionChanged)
+		[
+			SAssignNew(ComboDisplayTextBlock, STextBlock)
+				.Text(FText::FromString(TEXT("List Assets Options")))
+		];
+	return ConstructedComboBox;
+}
+
 void SAdvanceDeletionWidget::OnCheckBoxStateChange(ECheckBoxState NewState, TSharedPtr<FAssetData> AssetData)
 {
 	switch (NewState)
@@ -293,6 +322,18 @@ FReply SAdvanceDeletionWidget::OnDeselectAllButtonClicked()
 		}
 	}
 	return FReply::Handled();
+}
+
+TSharedRef<SWidget> SAdvanceDeletionWidget::OnGenerateComboContent(TSharedPtr<FString> SourceItem)
+{
+	return SNew(STextBlock)
+		.Text(FText::FromString(*SourceItem.Get()));
+}
+
+void SAdvanceDeletionWidget::OnComboSelectionChanged(TSharedPtr<FString> SelectedOption, ESelectInfo::Type InSelectInfo)
+{
+	DebugHeader::Print(*SelectedOption.Get(), FColor::Cyan);
+	ComboDisplayTextBlock->SetText(FText::FromString(*SelectedOption.Get()));
 }
 
 void SAdvanceDeletionWidget::RefreshAssetListView()

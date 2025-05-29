@@ -26,18 +26,22 @@ private:
 	TSharedRef<SButton> ConstructDeleteAllButton();
 	TSharedRef<SButton> ConstructSelectAllButton();
 	TSharedRef<SButton> ConstructDeselectAllButton();
+	TSharedRef<SComboBox<TSharedPtr<FString>>> ConstructComboBox();
 	void OnCheckBoxStateChange(ECheckBoxState NewState, TSharedPtr<FAssetData> AssetData);
 	FReply OnDeleteButtonClicked(const TSharedPtr<FAssetData>& AssetDataToDisply);
 	FReply OnDeleteAllButtonClicked();
 	FReply OnSelectAllButtonClicked();
 	FReply OnDeselectAllButtonClicked();
+	TSharedRef<SWidget> OnGenerateComboContent(TSharedPtr<FString> SourceItem);
+	void OnComboSelectionChanged(TSharedPtr<FString> SelectedOption, ESelectInfo::Type InSelectInfo);
 	void RefreshAssetListView();
 
 	TArray<TSharedPtr<FAssetData>> StoredAssetsData;
 	TArray<TSharedPtr<FAssetData>> AssetsDataToDeleteArray;
 	TArray<TSharedRef<SCheckBox>> CheckBoxesArray;
+	TArray<TSharedPtr<FString>> ComboBoxSourceItems;
 	TSharedPtr<SListView<TSharedPtr<FAssetData>>> ConstructedAssetListView;
-
+	TSharedPtr<STextBlock> ComboDisplayTextBlock;
 
 
 	FORCEINLINE FSlateFontInfo GetEmbossedTextFont() const
