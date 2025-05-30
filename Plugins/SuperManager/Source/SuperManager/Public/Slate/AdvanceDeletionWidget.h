@@ -27,7 +27,9 @@ private:
 	TSharedRef<SButton> ConstructSelectAllButton();
 	TSharedRef<SButton> ConstructDeselectAllButton();
 	TSharedRef<SComboBox<TSharedPtr<FString>>> ConstructComboBox();
+	TSharedRef<STextBlock> ConstructHelpTextBlock(const FString& HelpText, ETextJustify::Type TextJustify);
 	void OnCheckBoxStateChange(ECheckBoxState NewState, TSharedPtr<FAssetData> AssetData);
+	void OnRowClicked(TSharedPtr<FAssetData> AssetData);
 	FReply OnDeleteButtonClicked(const TSharedPtr<FAssetData>& AssetDataToDisply);
 	FReply OnDeleteAllButtonClicked();
 	FReply OnSelectAllButtonClicked();

@@ -125,7 +125,7 @@ void UQuickAssetAction::FixUpRedirectors()
 	FARFilter Filter;
 	Filter.bRecursivePaths = true;
 	Filter.PackagePaths.Emplace("/Game");
-	Filter.ClassNames.Emplace("ObjectRedirector");
+	Filter.ClassPaths.Emplace(UObjectRedirector::StaticClass());
 
 	TArray<FAssetData> OutRedirectors;
 	AssetRegistryModule.Get().GetAssets(Filter, OutRedirectors);

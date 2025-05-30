@@ -3,6 +3,7 @@
 
 #include "Slate/AdvanceDeletionWidget.h"
 #include "SuperManager.h"
+#include "EditorAssetLibrary.h"
 #include "DebugHeader.h"
 
 #define LIST_ALL TEXT("List All Assets")
@@ -35,22 +36,34 @@ void SAdvanceDeletionWidget::Construct(const FArguments& InArgs)
 					.ColorAndOpacity(FColor::White)
 			]
 
-			// for drop down to specify the listing condition and help text
 			+SVerticalBox::Slot()
 			.AutoHeight()
-			[
-				SNew(SHorizontalBox)
-			]
-
-			+SVerticalBox::Slot()
-			.AutoHeight()
+			.Padding(5.0f)
 			[
 				SNew(SHorizontalBox)
 					+SHorizontalBox::Slot()
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
 					.AutoWidth()
 					[
 						ConstructComboBox()
 					]
+					+ SHorizontalBox::Slot()
+					.FillWidth(.6f)
+					[
+						ConstructHelpTextBlock(
+							TEXT("Specify the listing condition in the drop. Left mouse click to go to where a asset is located."),
+							ETextJustify::Center
+						)
+					]
+					+ SHorizontalBox::Slot()
+						.FillWidth(.2f)
+						[
+							ConstructHelpTextBlock(
+								TEXT("Test\ntest\ntest\ntest\ntest"),
+								ETextJustify::Right
+							)
+						]
 			]
 
 			// for the asset list
@@ -151,7 +164,8 @@ TSharedRef<SListView<TSharedPtr<FAssetData>>> SAdvanceDeletionWidget::ConstructA
 {
 	ConstructedAssetListView = SNew(SListView<TSharedPtr<FAssetData>>)
 		.ListItemsSource(&DisplayedAssetsData)
-		.OnGenerateRow(this, &SAdvanceDeletionWidget::OnGenerateRowForList);
+		.OnGenerateRow(this, &SAdvanceDeletionWidget::OnGenerateRowForList)
+		.OnMouseButtonDoubleClick(this, &SAdvanceDeletionWidget::OnRowClicked);
 
 	return ConstructedAssetListView.ToSharedRef();
 }
@@ -243,6 +257,15 @@ TSharedRef<SComboBox<TSharedPtr<FString>>> SAdvanceDeletionWidget::ConstructComb
 	return ConstructedComboBox;
 }
 
+TSharedRef<STextBlock> SAdvanceDeletionWidget::ConstructHelpTextBlock(const FString& HelpText, ETextJustify::Type TextJustify)
+{
+	return SNew(STextBlock)
+		.Text(FText::FromString(HelpText))
+		.Justification(TextJustify)
+		.AutoWrapText(true)
+		;
+}
+
 void SAdvanceDeletionWidget::OnCheckBoxStateChange(ECheckBoxState NewState, TSharedPtr<FAssetData> AssetData)
 {
 	switch (NewState)
@@ -263,17 +286,21 @@ void SAdvanceDeletionWidget::OnCheckBoxStateChange(ECheckBoxState NewState, TSha
 	}
 }
 
+void SAdvanceDeletionWidget::OnRowClicked(TSharedPtr<FAssetData> AssetData)
+{
+	TArray<FString> AssetPath;
+	AssetPath.Add(AssetData->GetObjectPathString());
+	UEditorAssetLibrary::SyncBrowserToObjects(AssetPath);
+}
+
 FReply SAdvanceDeletionWidget::OnDeleteButtonClicked(const TSharedPtr<FAssetData>& AssetDataToDisply)
 {
 	FSuperManagerModule& SuperManager = FModuleManager::LoadModuleChecked<FSuperManagerModule>(TEXT("SuperManager"));
 	SuperManager.FixUpRedirectors();
 	if (SuperManager.DeleteSingleAssetForAssetList(*AssetDataToDisply))
 	{
-		if (StoredAssetsData.Contains(AssetDataToDisply))
-		{
-			StoredAssetsData.Remove(AssetDataToDisply);
-		}
-
+		StoredAssetsData.Remove(AssetDataToDisply);
+		DisplayedAssetsData.Remove(AssetDataToDisply);
 		RefreshAssetListView();
 	}
 	return FReply::Handled();
