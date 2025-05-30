@@ -26,7 +26,7 @@ TSharedRef<FSlateStyleSet> FSuperManagerStyle::CreateSlateStyleSet()
 
 	CustomStyleSet->SetContentRoot(IconDirectory);
 
-	const FVector2D Icon16x16(16.f, 16.f);
+	static const FVector2D Icon16x16(16.f, 16.f);
 
 	CustomStyleSet->Set(
 		TEXT("ContentBrowser.DeleteUnusedAssets"),
